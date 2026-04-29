@@ -1,0 +1,10 @@
+.env.local
+.env
+.env.development.local
+.env.test.local
+.env.production.local
+node_modules
+.git
+.gitignore
+README.md
+*.md
