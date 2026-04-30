@@ -55,17 +55,6 @@ export default function ProfilesPage() {
       setLoading(false);
     }
   };
-      });
-
-      setProfiles(data.data || []);
-      setTotal(data.total || 0);
-      setTotalPages(data.total_pages || 0);
-    } catch (error) {
-      console.error('Error fetching profiles:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   return (
     <div>
