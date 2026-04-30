@@ -12,16 +12,14 @@ export default function AccountPage() {
   useEffect(() => {
     const fetchUser = async () => {
       try {
-        const token = await getToken();
-        if (!token) {
-          router.push('/');
-          return;
-        }
-
         const userData = await getCurrentUser();
         setUser(userData?.data);
       } catch (error) {
         console.error('Error fetching user:', error);
+        // If authentication fails, redirect to login
+        if (error.message.includes('401')) {
+          router.push('/');
+        }
       } finally {
         setLoading(false);
       }

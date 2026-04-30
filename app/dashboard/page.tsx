@@ -19,22 +19,12 @@ export default function Dashboard() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const token = await getToken();
-        if (!token) {
-          router.push('/');
-          return;
-        }
-
-        // Fetch user info
+        // Fetch user info via our API route
         const userData = await getCurrentUser();
         setUser(userData?.data);
 
-        // Fetch profile stats (use a simpler endpoint)
-        const profilesData = await apiRequest('GET', '/api/profiles?page=1&limit=1', {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-          },
-        });
+        // Fetch profile stats via proxy route (no need for manual token handling)
+        const profilesData = await apiRequest('GET', '/api/profiles?page=1&limit=1');
 
         setStats({
           totalProfiles: profilesData.total || 0,
@@ -43,6 +33,10 @@ export default function Dashboard() {
         });
       } catch (error) {
         console.error('Error fetching dashboard data:', error);
+        // If authentication fails, redirect to login
+        if (error.message.includes('401')) {
+          router.push('/');
+        }
       } finally {
         setLoading(false);
       }

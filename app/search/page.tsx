@@ -31,20 +31,15 @@ export default function SearchPage() {
       setLoading(true);
       setSearched(true);
 
-      const token = await getToken();
-      if (!token) {
-        router.push('/');
-        return;
-      }
-
-      const data = await apiRequest('GET', `/api/profiles/search?q=${encodeURIComponent(query)}`, {
-        headers: { 'Authorization': `Bearer ${token}` },
-      });
-
+      const data = await apiRequest('GET', `/api/profiles/search?q=${encodeURIComponent(query)}`);
       setResults(data.data || []);
     } catch (error) {
       console.error('Error searching:', error);
       setResults([]);
+      // If authentication fails, redirect to login
+      if (error.message.includes('401')) {
+        router.push('/');
+      }
     } finally {
       setLoading(false);
     }

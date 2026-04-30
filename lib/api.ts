@@ -6,7 +6,7 @@ export async function apiRequest(
   options: any = {}
 ) {
   const url = `${API_URL}${endpoint}`;
-  
+
   const response = await fetch(url, {
     method,
     headers: {
@@ -26,22 +26,17 @@ export async function apiRequest(
 }
 
 export async function getToken() {
-  try {
-    const response = await fetch('/api/auth/token');
-    if (!response.ok) return null;
-    const data = await response.json();
-    return data.token;
-  } catch {
-    return null;
-  }
+  // For client-side usage, we don't need to expose the token
+  // The API proxy routes handle token extraction from cookies
+  return null;
 }
 
 export async function getCurrentUser() {
   try {
-    const response = await fetch('/api/auth/user');
+    const response = await fetch('/api/auth/me');
     if (!response.ok) return null;
     const data = await response.json();
-    return data.user;
+    return data;
   } catch {
     return null;
   }

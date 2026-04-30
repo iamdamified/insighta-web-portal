@@ -32,11 +32,6 @@ export default function ProfilesPage() {
   const fetchProfiles = async () => {
     try {
       setLoading(true);
-      const token = await getToken();
-      if (!token) {
-        router.push('/');
-        return;
-      }
 
       const params = new URLSearchParams({
         page: page.toString(),
@@ -46,8 +41,20 @@ export default function ProfilesPage() {
         ...(filters.age_group && { age_group: filters.age_group }),
       });
 
-      const data = await apiRequest('GET', `/api/profiles?${params}`, {
-        headers: { 'Authorization': `Bearer ${token}` },
+      const data = await apiRequest('GET', `/api/profiles?${params}`);
+      setProfiles(data.data || []);
+      setTotal(data.total || 0);
+      setTotalPages(data.total_pages || 0);
+    } catch (error) {
+      console.error('Error fetching profiles:', error);
+      // If authentication fails, redirect to login
+      if (error.message.includes('401')) {
+        router.push('/');
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
       });
 
       setProfiles(data.data || []);
