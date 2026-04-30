@@ -186,55 +186,6 @@ export default function ProfilesPage() {
     </div>
   );
 }
-                  <tr key={profile.id} style={{ borderBottom: '1px solid #e5e7eb' }}>
-                    <td style={{ padding: '1rem' }}>
-                      <a href={`/profiles/${profile.id}`} style={{ color: '#2563eb', textDecoration: 'none' }}>
-                        {profile.name}
-                      </a>
-                    </td>
-                    <td style={{ padding: '1rem' }}>{profile.gender} ({(profile.gender_probability * 100).toFixed(0)}%)</td>
-                    <td style={{ padding: '1rem' }}>{profile.age} ({profile.age_group})</td>
-                    <td style={{ padding: '1rem' }}>{profile.country_name}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-
-          <div style={{ marginTop: '1.5rem', display: 'flex', gap: '1rem', justifyContent: 'center' }}>
-            <button
-              onClick={() => setPage(Math.max(1, page - 1))}
-              disabled={page === 1}
-              style={{
-                padding: '0.5rem 1rem',
-                borderRadius: '4px',
-                border: '1px solid #ddd',
-                background: page === 1 ? '#f3f4f6' : '#fff',
-                cursor: page === 1 ? 'not-allowed' : 'pointer',
-              }}
-            >
-              Previous
-            </button>
-            <span style={{ alignSelf: 'center', color: '#666' }}>Page {page} of {totalPages}</span>
-            <button
-              onClick={() => setPage(Math.min(totalPages, page + 1))}
-              disabled={page === totalPages}
-              style={{
-                padding: '0.5rem 1rem',
-                borderRadius: '4px',
-                border: '1px solid #ddd',
-                background: page === totalPages ? '#f3f4f6' : '#fff',
-                cursor: page === totalPages ? 'not-allowed' : 'pointer',
-              }}
-            >
-              Next
-            </button>
-          </div>
-        </>
-      )}
-    </div>
-  );
-}
 
 async function getToken() {
   try {
