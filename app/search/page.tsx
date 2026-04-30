@@ -2,25 +2,16 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { apiRequest } from '@/lib/api';
-
-interface Profile {
-  id: string;
-  name: string;
-  gender: string;
-  gender_probability: number;
-  age: number;
-  age_group: string;
-  country_id: string;
-  country_name: string;
-  country_probability: number;
-}
+import { profiles as profilesApi, PaginatedResponse, Profile } from '@/lib/api-client';
 
 export default function SearchPage() {
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<Profile[]>([]);
   const [loading, setLoading] = useState(false);
   const [searched, setSearched] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(0);
   const router = useRouter();
 
   const handleSearch = async (e: React.FormEvent) => {
@@ -30,14 +21,24 @@ export default function SearchPage() {
     try {
       setLoading(true);
       setSearched(true);
+      setError(null);
+      setPage(1);
 
-      const data = await apiRequest('GET', `/api/profiles/search?q=${encodeURIComponent(query)}`);
-      setResults(data.data || []);
-    } catch (error) {
-      console.error('Error searching:', error);
-      setResults([]);
-      // If authentication fails, redirect to login
-      if (error.message.includes('401')) {
+      // Use aligned API client - matches CLI: insighta profiles search "query"
+      const response = await profilesApi.search(query, { page: 1, limit: 10 });
+
+      if (response.status === 'success') {
+        setResults(response.data || []);
+        setTotalPages(response.total_pages || 0);
+      } else {
+        setError(response.message || 'Search failed');
+      }
+    } catch (err: any) {
+      console.error('Error searching:', err);
+      setError(err.message || 'Search failed');
+      
+      // If session expired, redirect to login
+      if (err.status === 401 || err.message?.includes('Session expired')) {
         router.push('/');
       }
     } finally {
@@ -48,12 +49,15 @@ export default function SearchPage() {
   return (
     <div>
       <h1>Search Profiles</h1>
+      <p style={{ color: '#666' }}>
+        Use natural language to search profiles (e.g., "male adults from Nigeria", "young females from Egypt")
+      </p>
 
       <form onSubmit={handleSearch} style={{ marginBottom: '2rem' }}>
         <div style={{ display: 'flex', gap: '0.5rem' }}>
           <input
             type="text"
-            placeholder="Enter natural language query (e.g., 'male adults from Nigeria')"
+            placeholder="Enter natural language query..."
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             style={{
@@ -66,27 +70,38 @@ export default function SearchPage() {
           />
           <button
             type="submit"
+            disabled={loading}
             style={{
               padding: '0.75rem 1.5rem',
-              background: '#2563eb',
+              background: loading ? '#9ca3af' : '#2563eb',
               color: '#fff',
               border: 'none',
               borderRadius: '4px',
-              cursor: 'pointer',
+              cursor: loading ? 'not-allowed' : 'pointer',
               fontSize: '1rem',
             }}
           >
-            Search
+            {loading ? 'Searching...' : 'Search'}
           </button>
         </div>
       </form>
 
-      {loading && <div>Searching...</div>}
+      {error && (
+        <div style={{
+          background: '#fee2e2',
+          color: '#991b1b',
+          padding: '1rem',
+          borderRadius: '8px',
+          marginBottom: '1rem',
+        }}>
+          {error}
+        </div>
+      )}
 
       {searched && (
         <>
           <div style={{ marginBottom: '1rem', color: '#666' }}>
-            Found {results.length} results
+            Found {results.length} results for "{query}"
           </div>
 
           {results.length > 0 ? (
@@ -113,40 +128,27 @@ export default function SearchPage() {
                           {profile.name}
                         </a>
                       </td>
-                      <td style={{ padding: '1rem' }}>{profile.gender} ({(profile.gender_probability * 100).toFixed(0)}%)</td>
-                      <td style={{ padding: '1rem' }}>{profile.age} ({profile.age_group})</td>
-                      <td style={{ padding: '1rem' }}>{profile.country_name}</td>
+                      <td style={{ padding: '1rem' }}>
+                        {profile.gender} ({(profile.gender_probability * 100).toFixed(0)}%)
+                      </td>
+                      <td style={{ padding: '1rem' }}>
+                        {profile.age} ({profile.age_group})
+                      </td>
+                      <td style={{ padding: '1rem' }}>
+                        {profile.country_name}
+                      </td>
                     </tr>
                   ))}
                 </tbody>
               </table>
             </div>
           ) : (
-            <div style={{
-              background: '#f9fafb',
-              padding: '2rem',
-              borderRadius: '8px',
-              textAlign: 'center',
-              color: '#666',
-            }}>
-              No profiles found. Try a different search query.
+            <div style={{ color: '#666', textAlign: 'center', padding: '2rem' }}>
+              No profiles matched your search query.
             </div>
           )}
         </>
       )}
     </div>
   );
-}
-
-async function getToken() {
-  try {
-    const response = await fetch('/api/auth/token');
-    if (response.ok) {
-      const data = await response.json();
-      return data.token;
-    }
-  } catch (error) {
-    console.error('Error getting token:', error);
-  }
-  return null;
 }
