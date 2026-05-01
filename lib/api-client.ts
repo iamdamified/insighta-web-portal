@@ -9,7 +9,10 @@
  * - Throws on fatal errors
  */
 
-import { ApiResponse, PaginatedResponse, ApiRequestOptions, TokenResponse } from './types';
+import { ApiResponse, PaginatedResponse, ApiRequestOptions, TokenResponse, User, Profile } from './types';
+
+// Re-export types for convenience
+export type { User, Profile, ApiResponse, PaginatedResponse, TokenResponse } from './types';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 const API_VERSION = '1';
@@ -111,6 +114,7 @@ export async function apiRequest<T = any>(
   }
 
   const headers = buildAuthHeaders(options);
+  const skipRefresh = options?.skipRefresh || false;
 
   try {
     // First attempt
@@ -119,11 +123,10 @@ export async function apiRequest<T = any>(
       headers,
       credentials: 'include',
       body: options?.body ? JSON.stringify(options.body) : undefined,
-      ...options,
     });
 
     // Handle 401 - attempt refresh and retry
-    if (response.status === 401 && !options?.skipRefresh) {
+    if (response.status === 401 && !skipRefresh) {
       const refreshed = await refreshAccessToken();
 
       if (refreshed) {
@@ -133,8 +136,6 @@ export async function apiRequest<T = any>(
           headers,
           credentials: 'include',
           body: options?.body ? JSON.stringify(options.body) : undefined,
-          ...options,
-          skipRefresh: true, // Prevent infinite retry
         });
 
         if (!retryResponse.ok) {
