@@ -7,28 +7,10 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 export default function LoginPage() {
   const router = useRouter();
 
-  const handleGitHubLogin = async () => {
-    try {
-      // Get OAuth URL from backend (handles PKCE automatically)
-      const response = await fetch(`${API_URL}/auth/github`, {
-        method: 'GET',
-        redirect: 'manual', // Don't follow redirect automatically
-      });
-
-      // Backend returns 302 redirect to GitHub
-      if (response.status === 302 || response.status === 307) {
-        const redirectUrl = response.headers.get('location');
-        if (redirectUrl) {
-          window.location.href = redirectUrl;
-          return;
-        }
-      }
-
-      alert('Failed to start GitHub login. Please try again.');
-    } catch (error) {
-      console.error('Login error:', error);
-      alert('Failed to start GitHub login. Please try again.');
-    }
+  const handleGitHubLogin = () => {
+    // Redirect to backend OAuth endpoint which handles PKCE and returns redirect to GitHub
+    // Browser will automatically follow the redirect
+    window.location.href = `${API_URL}/auth/github`;
   };
 
   return (
