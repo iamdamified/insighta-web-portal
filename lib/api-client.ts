@@ -74,15 +74,23 @@ async function refreshAccessToken(): Promise<boolean> {
 // ===========================
 
 /**
- * Build authentication headers
+ * Build authentication headers with Bearer token
  * Matches CLI's auth_headers() function
+ * Note: For cross-origin requests, we need to include the token in the Authorization header
  */
-function buildAuthHeaders(options?: ApiRequestOptions): Record<string, string> {
-  return {
+function buildAuthHeaders(options?: ApiRequestOptions, token?: string | null): Record<string, string> {
+  const headers: Record<string, string> = {
     'Content-Type': 'application/json',
     'X-API-Version': API_VERSION,
     ...options?.headers,
   };
+
+  // Add Authorization header if token is provided
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
+
+  return headers;
 }
 
 // ===========================
@@ -113,15 +121,30 @@ export async function apiRequest<T = any>(
     });
   }
 
-  const headers = buildAuthHeaders(options);
   const skipRefresh = options?.skipRefresh || false;
 
   try {
+    // Get access token from our frontend auth endpoint (server-side cookie access)
+    let token: string | null = null;
+    try {
+      const tokenResponse = await fetch('/api/auth/token', {
+        method: 'GET',
+        credentials: 'include',
+      });
+      if (tokenResponse.ok) {
+        const tokenData = await tokenResponse.json();
+        token = tokenData.token;
+      }
+    } catch (error) {
+      console.debug('Failed to get token:', error);
+    }
+
+    const headers = buildAuthHeaders(options, token);
+
     // First attempt
     const response = await fetch(url.toString(), {
       method,
       headers,
-      credentials: 'include',
       body: options?.body ? JSON.stringify(options.body) : undefined,
     });
 
@@ -130,11 +153,27 @@ export async function apiRequest<T = any>(
       const refreshed = await refreshAccessToken();
 
       if (refreshed) {
+        // Get new token after refresh
+        let newToken: string | null = null;
+        try {
+          const newTokenResponse = await fetch('/api/auth/token', {
+            method: 'GET',
+            credentials: 'include',
+          });
+          if (newTokenResponse.ok) {
+            const tokenData = await newTokenResponse.json();
+            newToken = tokenData.token;
+          }
+        } catch (error) {
+          console.debug('Failed to get new token:', error);
+        }
+
+        const retryHeaders = buildAuthHeaders(options, newToken);
+
         // Retry with new token
         const retryResponse = await fetch(url.toString(), {
           method,
-          headers,
-          credentials: 'include',
+          headers: retryHeaders,
           body: options?.body ? JSON.stringify(options.body) : undefined,
         });
 

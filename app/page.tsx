@@ -2,16 +2,33 @@
 
 import { useRouter } from 'next/navigation';
 
-const GITHUB_CLIENT_ID = process.env.NEXT_PUBLIC_GITHUB_CLIENT_ID || process.env.GITHUB_CLIENT_ID;
-const REDIRECT_URI = process.env.NEXT_PUBLIC_REDIRECT_URI || 'http://localhost:3000/api/auth/callback';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
 export default function LoginPage() {
   const router = useRouter();
 
-  const handleGitHubLogin = () => {
-    const scope = 'read:user user:email';
-    const url = `https://github.com/login/oauth/authorize?client_id=${GITHUB_CLIENT_ID}&redirect_uri=${REDIRECT_URI}&scope=${scope}`;
-    window.location.href = url;
+  const handleGitHubLogin = async () => {
+    try {
+      // Get OAuth URL from backend (handles PKCE automatically)
+      const response = await fetch(`${API_URL}/auth/github`, {
+        method: 'GET',
+        redirect: 'manual', // Don't follow redirect automatically
+      });
+
+      // Backend returns 302 redirect to GitHub
+      if (response.status === 302 || response.status === 307) {
+        const redirectUrl = response.headers.get('location');
+        if (redirectUrl) {
+          window.location.href = redirectUrl;
+          return;
+        }
+      }
+
+      alert('Failed to start GitHub login. Please try again.');
+    } catch (error) {
+      console.error('Login error:', error);
+      alert('Failed to start GitHub login. Please try again.');
+    }
   };
 
   return (
