@@ -2,7 +2,7 @@
 
 import { useRouter } from 'next/navigation';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -10,7 +10,7 @@ export default function LoginPage() {
   const handleGitHubLogin = () => {
     // Redirect to backend OAuth endpoint which handles PKCE and returns redirect to GitHub
     // Browser will automatically follow the redirect
-    window.location.href = `${API_URL}/auth/github`;
+    window.location.href = `${backendUrl}/auth/github`;
   };
 
   return (
