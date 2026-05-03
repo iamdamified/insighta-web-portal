@@ -8,9 +8,9 @@ export default function LoginPage() {
   const router = useRouter();
 
   const handleGitHubLogin = () => {
-    // Redirect to backend OAuth endpoint which handles PKCE and returns redirect to GitHub
+    // Redirect to backend web OAuth endpoint which handles PKCE and returns redirect to GitHub
     // Browser will automatically follow the redirect
-    window.location.href = `${backendUrl}/auth/github`;
+    window.location.href = `${backendUrl}/auth/web/github`;
   };
 
   return (

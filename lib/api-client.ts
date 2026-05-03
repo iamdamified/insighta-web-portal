@@ -24,21 +24,12 @@ const API_VERSION = '1';
 /**
  * Get access token from cookie
  * Mirrors CLI's approach but uses HTTP-only cookies
+ * Note: Since backend now sets HTTP-only cookies, we don't need to fetch tokens manually
  */
 async function getAccessToken(): Promise<string | null> {
-  try {
-    const response = await fetch('/api/auth/me', {
-      method: 'GET',
-      credentials: 'include',
-    });
-    
-    if (response.ok) {
-      return 'token_valid'; // Token is in cookie, just checking validity
-    }
-    return null;
-  } catch {
-    return null;
-  }
+  // Cookies are HTTP-only, so we can't access them directly
+  // The backend will validate the cookie automatically
+  return 'cookie_present'; // Placeholder - actual validation happens server-side
 }
 
 /**
@@ -47,13 +38,13 @@ async function getAccessToken(): Promise<string | null> {
  */
 async function refreshAccessToken(): Promise<boolean> {
   try {
-    const response = await fetch('/api/auth/token', {
+    const response = await fetch(`${API_URL}/auth/refresh`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      credentials: 'include',
-      body: JSON.stringify({}),
+      credentials: 'include', // Send cookies with request
+      body: JSON.stringify({}), // Empty body as per backend expectation
     });
 
     if (!response.ok) {
@@ -126,25 +117,16 @@ export async function apiRequest<T = any>(
   try {
     // Get access token from our frontend auth endpoint (server-side cookie access)
     let token: string | null = null;
-    try {
-      const tokenResponse = await fetch('/api/auth/token', {
-        method: 'GET',
-        credentials: 'include',
-      });
-      if (tokenResponse.ok) {
-        const tokenData = await tokenResponse.json();
-        token = tokenData.token;
-      }
-    } catch (error) {
-      console.debug('Failed to get token:', error);
-    }
+    // Since cookies are HTTP-only, we rely on credentials: 'include' to send them
+    // The backend will validate the cookie automatically
 
     const headers = buildAuthHeaders(options, token);
 
-    // First attempt
+    // First attempt - send cookies automatically
     const response = await fetch(url.toString(), {
       method,
       headers,
+      credentials: 'include', // Send HTTP-only cookies
       body: options?.body ? JSON.stringify(options.body) : undefined,
     });
 
@@ -153,27 +135,11 @@ export async function apiRequest<T = any>(
       const refreshed = await refreshAccessToken();
 
       if (refreshed) {
-        // Get new token after refresh
-        let newToken: string | null = null;
-        try {
-          const newTokenResponse = await fetch('/api/auth/token', {
-            method: 'GET',
-            credentials: 'include',
-          });
-          if (newTokenResponse.ok) {
-            const tokenData = await newTokenResponse.json();
-            newToken = tokenData.token;
-          }
-        } catch (error) {
-          console.debug('Failed to get new token:', error);
-        }
-
-        const retryHeaders = buildAuthHeaders(options, newToken);
-
-        // Retry with new token
+        // Retry with refreshed cookies
         const retryResponse = await fetch(url.toString(), {
           method,
-          headers: retryHeaders,
+          headers,
+          credentials: 'include', // Send refreshed cookies
           body: options?.body ? JSON.stringify(options.body) : undefined,
         });
 
